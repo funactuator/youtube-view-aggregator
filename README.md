@@ -2,6 +2,8 @@
 
 Chrome extension. Adds an **in-page panel** on any channel page that aggregates **exact** view counts across the first N videos, and shows the **exact upload date** under each video.
 
+![View Aggregator panel](screenshot.png)
+
 ## Features
 - **Spacious in-page panel** injected above the video grid (vidIQ-style), theme-aware (dark/light auto).
 - **Sort selector** — Latest / Popular / Oldest right in the panel; switches YouTube's tab, then aggregates that set.
