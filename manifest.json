@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "YouTube Channel View Aggregator",
-  "version": "3.1.2",
+  "version": "3.2.0",
   "description": "In-page panel that aggregates exact views across the first N videos of a channel tab, with average, top/bottom, readable numbers (M/K + Lakh), and exact upload dates under each video.",
   "permissions": [
     "storage",

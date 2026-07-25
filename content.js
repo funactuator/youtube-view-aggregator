@@ -201,6 +201,27 @@ async function browse(body) {
 
 // Reads ids out of the list bodies only, so the channel header, the featured video and
 // the "for you" shelves don't get counted. Returns the token for the next page.
+// The listing already carries an approximate "4.1M views · 10 days ago" per item. Too coarse
+// to report, but exact enough to RANK — which is all Popular and Oldest need before deciding
+// whose precise numbers are worth fetching.
+const approxMeta = new Map();
+const AGO_DAYS = { hour: 1 / 24, day: 1, week: 7, month: 30.44, year: 365.25 };
+function parseApprox(parts) {
+  let views = null, ageDays = null;
+  for (const s of parts) {
+    let m = /^([\d.,]+)\s*([KMB]?)\s*views?$/i.exec(s.trim());
+    if (m) {
+      const n = parseFloat(m[1].replace(/,/g, ""));
+      const mult = { K: 1e3, M: 1e6, B: 1e9 }[m[2].toUpperCase()] || 1;
+      if (isFinite(n)) views = n * mult;
+      continue;
+    }
+    m = /^(\d+)\s+(hour|day|week|month|year)s?\s+ago$/i.exec(s.trim());
+    if (m) ageDays = parseInt(m[1], 10) * AGO_DAYS[m[2].toLowerCase()];
+  }
+  return { views, ageDays };
+}
+
 function harvest(payload, seen, order) {
   let token = null;
   const walk = (o) => {
@@ -212,6 +233,17 @@ function harvest(payload, seen, order) {
     const t = cir && cir.continuationEndpoint && cir.continuationEndpoint.continuationCommand &&
               cir.continuationEndpoint.continuationCommand.token;
     if (t) token = t;
+    if (o.lockupViewModel && typeof o.lockupViewModel.contentId === "string" &&
+        !approxMeta.has(o.lockupViewModel.contentId)) {
+      const parts = [];
+      (function collect(x) {
+        if (!x || typeof x !== "object") return;
+        if (Array.isArray(x)) return x.forEach(collect);
+        if (x.text && typeof x.text.content === "string") parts.push(x.text.content);
+        for (const k in x) collect(x[k]);
+      })(o.lockupViewModel.metadata);
+      approxMeta.set(o.lockupViewModel.contentId, parseApprox(parts));
+    }
     const add = (id) => { if (id && id.length === 11 && !seen.has(id)) { seen.add(id); order.push(id); } };
     if (typeof o.videoId === "string") add(o.videoId);
     // Shorts sit in shortsLockupViewModel, which carries the id in these two spots instead
@@ -274,6 +306,30 @@ async function datasetFor(opts, onProgress) {
   const cutoff = opts.months ? monthsAgo(opts.months) : null;
   const topLatest = !cutoff && opts.n && opts.sort === "Latest";
   const needsEverything = !cutoff && !topLatest;
+  // Popular and Oldest used to fetch every video just to sort them. Rank on the listing's own
+  // approximate figures instead and fetch exact numbers for the shortlist only. A margin
+  // covers the rounding ("4.1M" hides a 100k spread), and the caller re-sorts on real values.
+  if (needsEverything && opts.n) {
+    const cands = [];
+    for (const k of kinds) {
+      await listTabPages(TAB_OF[k], async (ids) => {
+        ids.forEach((id) => cands.push(Object.assign(
+          { id, kind: k === "shorts" ? "short" : "video" }, approxMeta.get(id) || {})));
+        onProgress && onProgress(cands.length);
+        return true;
+      });
+    }
+    if (cands.length) {
+      const by = opts.sort === "Popular"
+        ? (a, b) => (b.views || 0) - (a.views || 0)
+        : (a, b) => (b.ageDays || 0) - (a.ageDays || 0);
+      const shortlist = cands.sort(by).slice(0, opts.n + 10);
+      const picked = await mapPool(shortlist,
+        (c) => fetchStats(c.id).then((s) => (s ? Object.assign({}, s, { kind: c.kind }) : null)), 6,
+        onProgress ? (done, tot) => onProgress(done, done / tot) : null);
+      return picked.filter((s) => s && (s.views != null || s.date));
+    }
+  }
   const out = [];
   for (const k of kinds) {
     let dry = 0, pages = 0, kept = 0;

@@ -2,6 +2,15 @@
 
 Versions live in `manifest.json`. Bump it in the same commit as the change.
 
+## 3.2.0
+
+### Performance
+- **Popular and Oldest are ~3x faster.** They used to fetch every video on the channel just
+  to sort them. The listing already carries an approximate "4.1M views · 10 days ago" per
+  item — too coarse to report, but exact enough to rank — so ranking happens there and precise
+  numbers are fetched only for the shortlist. On a 445-video channel that is 20 lookups
+  instead of 445: 16s down to ~5.5s, with the same answer.
+
 ## 3.1.2
 
 ### Fixed
