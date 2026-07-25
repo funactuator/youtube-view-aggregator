@@ -2,6 +2,17 @@
 
 Versions live in `manifest.json`. Bump it in the same commit as the change.
 
+## 3.1.0
+
+### Changed
+- **The three scopes are now tabs.** Top N, Last N months and All time are three different
+  questions, and having all their controls share one row meant half of them were always
+  irrelevant. Each mode is a tab that shows only its own controls — so "Last N months" has no
+  sort control at all rather than a disabled one, and All time has no number box. Top N is the
+  default. The tab row is a fixed height, so switching modes still cannot resize the panel.
+- Removed the disabled-in-place control handling, which existed only to stop the shared
+  control row from reflowing.
+
 ## 3.0.0
 
 Panel redesigned and the fetching rewritten to only cost what the question is worth.

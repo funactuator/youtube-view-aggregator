@@ -157,6 +157,34 @@
   #ytva-panel .ytva-accbody, #ytva-panel .ytva-acc svg { transition: none; }
 }
 
+/* ---------- mode tabs ----------
+   Each mode is a different question, so each gets its own row of controls. Nothing that
+   does not apply is left on screen — which is what the old disabled-in-place controls were
+   working around. The row keeps a fixed height so switching modes cannot resize the panel. */
+#ytva-panel .ytva-tabs {
+  display: flex; gap: 4px; padding: 0 16px; border-bottom: 1px solid var(--ytva-hair);
+}
+#ytva-panel .ytva-tabs [role="tab"] {
+  border: 0; background: transparent; font-family: inherit; font-size: 13px; font-weight: 500;
+  color: var(--ytva-ink3); padding: 0 12px; height: 36px; cursor: pointer;
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+}
+#ytva-panel .ytva-tabs [role="tab"]:hover { color: var(--ytva-ink2); }
+#ytva-panel .ytva-tabs [role="tab"][aria-selected="true"] {
+  color: var(--ytva-ink); font-weight: 600; border-bottom-color: var(--ytva-ink);
+}
+#ytva-panel .ytva-tabs [role="tab"]:focus-visible { outline: 2px solid var(--ytva-accent); outline-offset: -2px; }
+
+#ytva-panel .ytva-tabrow {
+  display: flex; align-items: center; gap: 12px; padding: 0 16px;
+  height: 56px; border-bottom: 1px solid var(--ytva-hair);
+}
+#ytva-panel .ytva-modectl { display: flex; align-items: center; gap: 12px; min-width: 0; }
+#ytva-panel .ytva-modectl[hidden] { display: none; }
+#ytva-panel .ytva-lead { font-size: 13px; font-weight: 400; color: var(--ytva-ink3); }
+#ytva-panel .ytva-monthsbox { display: inline-flex; align-items: center; }
+#ytva-panel .ytva-tabrow .ytva-go { margin-left: auto; }
+
 /* ---------- busy signal ----------
    The user wants to keep reading the previous run's figures while the next one loads, so
    nothing is hidden: a spinner in the button plus the progress line carry the state. The

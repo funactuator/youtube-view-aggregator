@@ -579,24 +579,40 @@ function buildPanel() {
         <button type="button" data-kind="shorts" aria-pressed="false">Shorts</button>
         <button type="button" data-kind="both" aria-pressed="false">Both</button>
       </div>
-      <div class="ytva-field">
-        <label for="ytva-range">Range</label>
-        <select id="ytva-range">
-          <option value="top">Top N</option>
-          <option value="months">Last N months</option>
-          <option value="all">All time</option>
-        </select>
-        <label class="ytva-vh" for="ytva-n">Amount</label>
-        <input id="ytva-n" type="number" min="1" max="600" value="10"/>
-      </div>
-      <div class="ytva-seg" id="ytva-sort" role="group" aria-label="Sort">
-        <button type="button" data-sort="Latest" aria-pressed="true">Latest</button>
-        <button type="button" data-sort="Popular" aria-pressed="false">Popular</button>
-        <button type="button" data-sort="Oldest" aria-pressed="false">Oldest</button>
-      </div>
-      <button type="button" id="ytva-calc" class="ytva-go"><span class="ytva-spinner" aria-hidden="true"></span><span class="ytva-go-label">Calculate</span></button>
       <button type="button" id="ytva-toggle" class="ytva-acc" aria-expanded="true"
               aria-controls="ytva-body" title="Collapse panel">${CHEV_SVG}</button>
+    </div>
+
+    <!-- Three genuinely different questions, so three modes. Each one shows only its own
+         controls; nothing irrelevant is left on screen to be read and dismissed. -->
+    <div class="ytva-tabs" role="tablist" aria-label="What to aggregate">
+      <button type="button" role="tab" data-scope="top" id="ytva-tab-top"
+              aria-selected="true" aria-controls="ytva-tabrow" tabindex="0">Top N</button>
+      <button type="button" role="tab" data-scope="months" id="ytva-tab-months"
+              aria-selected="false" aria-controls="ytva-tabrow" tabindex="-1">Last N months</button>
+      <button type="button" role="tab" data-scope="all" id="ytva-tab-all"
+              aria-selected="false" aria-controls="ytva-tabrow" tabindex="-1">All time</button>
+    </div>
+    <div class="ytva-tabrow" id="ytva-tabrow" role="tabpanel" aria-labelledby="ytva-tab-top">
+      <div class="ytva-modectl" data-scope="top">
+        <label class="ytva-vh" for="ytva-n">How many</label>
+        <span class="ytva-lead">Top</span>
+        <input id="ytva-n" type="number" min="1" max="600" value="10"/>
+        <div class="ytva-seg" id="ytva-sort" role="group" aria-label="Sort">
+          <button type="button" data-sort="Latest" aria-pressed="true">Latest</button>
+          <button type="button" data-sort="Popular" aria-pressed="false">Popular</button>
+          <button type="button" data-sort="Oldest" aria-pressed="false">Oldest</button>
+        </div>
+      </div>
+      <div class="ytva-modectl" data-scope="months" hidden>
+        <span class="ytva-lead">Published in the last</span>
+        <span class="ytva-monthsbox"></span>
+        <span class="ytva-lead">months</span>
+      </div>
+      <div class="ytva-modectl" data-scope="all" hidden>
+        <span class="ytva-lead">Every video on the channel</span>
+      </div>
+      <button type="button" id="ytva-calc" class="ytva-go"><span class="ytva-spinner" aria-hidden="true"></span><span class="ytva-go-label">Calculate</span></button>
     </div>
     <div class="ytva-progress" id="ytva-progress"><div class="ytva-progress-fill" id="ytva-progress-fill"></div></div>
     <div class="ytva-accbody" id="ytva-body"><div class="ytva-accinner">
@@ -651,8 +667,7 @@ function buildPanel() {
     chrome.storage.sync.get({ ytvaN: DEFAULT_N.top, ytvaScope: "top", ytvaKind: "videos" }, (d) => {
       selectedScope = ["top", "months", "all"].indexOf(d.ytvaScope) < 0 ? "top" : d.ytvaScope;
       storedKind = ["videos", "shorts", "both"].indexOf(d.ytvaKind) < 0 ? "videos" : d.ytvaKind;
-      const range = p.querySelector("#ytva-range");
-      if (range) range.value = selectedScope;
+
       const inp = nInput();
       if (inp) inp.value = clampN(d.ytvaN);
       syncControls();
@@ -682,10 +697,25 @@ function buildPanel() {
       runSelection();
     };
   });
-  p.querySelector("#ytva-range").onchange = (e) => {
-    selectedScope = e.target.value;
+  p.querySelectorAll(".ytva-tabs [role=tab]").forEach((tab) => {
+    tab.onclick = () => selectScope(tab.dataset.scope);
+    tab.onkeydown = (e) => {                    // roving focus, as a real tablist should
+      const order = ["top", "months", "all"];
+      const i = order.indexOf(tab.dataset.scope);
+      const next = e.key === "ArrowRight" ? order[(i + 1) % 3]
+                 : e.key === "ArrowLeft" ? order[(i + 2) % 3] : null;
+      if (!next) return;
+      e.preventDefault();
+      selectScope(next);
+      p.querySelector(`#ytva-tab-${next}`).focus();
+    };
+  });
+  function selectScope(scope) {
+    if (running || scope === selectedScope) return;
+    selectedScope = scope;
     const inp = nInput();
-    if (inp && selectedScope !== "all") inp.value = DEFAULT_N[selectedScope];
+    const inp2 = nInput();
+    if (inp2 && selectedScope !== "all") inp2.value = DEFAULT_N[selectedScope];
     syncControls();
     chrome.storage.sync.set({ ytvaScope: selectedScope, ytvaN: currentN() });
   };
@@ -776,13 +806,27 @@ function syncControls() {
   if (kindBar) kindBar.querySelectorAll("button").forEach((b) =>
     b.setAttribute("aria-pressed", String(b.dataset.kind === selectedKind)));
   const sortBar = document.getElementById("ytva-sort");
-  const sortApplies = selectedScope === "top";
+  const sortApplies = true;
   if (sortBar) sortBar.querySelectorAll("button").forEach((b) => {
     b.setAttribute("aria-pressed", String(b.dataset.sort === selectedSort));
     b.disabled = !sortApplies;
   });
   const inp = nInput();
-  if (inp) inp.disabled = selectedScope === "all";
+  // The months box borrows the same input so N survives a mode switch.
+  const box = document.querySelector(".ytva-monthsbox");
+  const inp3 = document.getElementById("ytva-n");
+  if (box && inp3 && selectedScope === "months" && inp3.parentElement !== box) box.appendChild(inp3);
+  const topCtl = document.querySelector('.ytva-modectl[data-scope="top"]');
+  if (topCtl && inp3 && selectedScope === "top" && inp3.parentElement !== topCtl)
+    topCtl.insertBefore(inp3, topCtl.querySelector("#ytva-sort"));
+  document.querySelectorAll(".ytva-modectl").forEach((m) => { m.hidden = m.dataset.scope !== selectedScope; });
+  document.querySelectorAll(".ytva-tabs [role=tab]").forEach((tb) => {
+    const on = tb.dataset.scope === selectedScope;
+    tb.setAttribute("aria-selected", String(on));
+    tb.tabIndex = on ? 0 : -1;
+  });
+  const row = document.getElementById("ytva-tabrow");
+  if (row) row.setAttribute("aria-labelledby", `ytva-tab-${selectedScope}`);
   syncScopeLine();
 }
 
