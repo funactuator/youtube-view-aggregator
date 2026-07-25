@@ -739,6 +739,10 @@ function buildPanel() {
       if (running) return;
       selectedSort = b.dataset.sort;
       syncControls();
+      // Our own numbers no longer depend on YouTube's sort control, but the user still
+      // expects the page under the panel to follow along. Best effort: click the chip if the
+      // channel renders one, and carry on regardless if it does not.
+      selectSort(selectedSort);
       runSelection();
     };
   });

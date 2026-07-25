@@ -2,6 +2,9 @@
 
 Versions live in `manifest.json`. Bump it in the same commit as the change.
 
+Every change is verified against `TEST-CHECKLIST.md` before it ships, and any feature it adds
+gets its cases written into that file in the same commit.
+
 ## 3.2.0
 
 ### Performance
