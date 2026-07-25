@@ -1029,8 +1029,13 @@ function resetForChannel() {
 
 // The page's own grid is only the long-form list on /videos, so the cheap DOM read applies
 // to exactly one selection: Top N videos on that tab. Everything else scans the channel.
+// Reading the rendered grid is only safe for the order it is already in. Popular and Oldest
+// used to be reached by clicking YouTube's own sort control, which some channels render as a
+// dropdown instead of chips — there it silently did nothing. We hold every video's views and
+// date anyway, so those two orders are computed here rather than asked for.
 function canReadFromPage() {
-  return selectedScope === "top" && selectedKind === "videos" && /\/videos\/?$/.test(location.pathname);
+  return selectedScope === "top" && selectedKind === "videos" &&
+         selectedSort === "Latest" && /\/videos\/?$/.test(location.pathname);
 }
 function runSelection(opts) {
   // A run asked for while another is in flight (a channel switch mid-scan, above all) is
@@ -1115,7 +1120,11 @@ async function runDataset(opts) {
     if (gen !== runGen || chan !== getChannelId()) return;   // superseded, or we moved channel
     if (!stats.length) {
       renderResults(null);          // never leave stale figures under a failure message
-      say("Couldn't list this channel's videos.");
+      // An empty month window is a real answer, not a failure — the old wording claimed the
+      // channel could not be listed, which sent people hunting for a bug that wasn't there.
+      say(months
+        ? `Nothing published in the last ${months} month${months > 1 ? "s" : ""}`
+        : "Couldn't read this channel's videos.");
       return;
     }
     // Only a run that walked the tabs end to end can speak for the oldest upload.

@@ -2,6 +2,16 @@
 
 Versions live in `manifest.json`. Bump it in the same commit as the change.
 
+## 3.1.2
+
+### Fixed
+- **Popular and Oldest did nothing on some channels.** They were reached by clicking
+  YouTube's own sort control, which some channels render as a dropdown rather than chips —
+  there the click found nothing and the order never changed. Both orders are now computed
+  from the views and dates we already hold, so YouTube's sort UI is never touched.
+- **"Couldn't list this channel's videos" was shown for an empty month window.** Nothing was
+  broken — the channel simply had not published in that window. It now says so.
+
 ## 3.1.1
 
 ### Changed
