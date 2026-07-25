@@ -628,11 +628,11 @@ function buildPanel() {
           <span class="ytva-sub" id="ytva-avg-exact"></span>
         </div>
         <div class="ytva-col">
-          <span class="ytva-lbl">Per month</span>
+          <span class="ytva-lbl" id="ytva-third-label">Per month</span>
           <div class="ytva-hero num" id="ytva-permonth">—</div>
           <span class="ytva-sub" id="ytva-permonth-sub"></span>
         </div>
-        <div class="ytva-col">
+        <div class="ytva-col" id="ytva-sparkcol">
           <span class="ytva-lbl">Views by month</span>
           <div class="ytva-spark" id="ytva-spark" aria-hidden="true"></div>
           <div class="ytva-sparkaxis">
@@ -970,8 +970,21 @@ function renderResults(r, kind) {
   setCell("ytva-total-ind", abInd2(r.total) || "");
   setCell("ytva-avg", abIntl2(avgR));
   setMeasure("ytva-avg-exact", fmtExact(avgR), "each");
-  setCell("ytva-permonth", r.perMonth == null ? "—" : abIntl2(Math.round(r.perMonth)));
-  setCell("ytva-permonth-sub", r.from ? `across ${fmtMonth(r.from)} – ${fmtMonth(r.to)}` : "");
+  const buckets = (r.buckets || []).length;
+  if (selectedScope === "months") {
+    const w = KIND_WORD[selectedKind]; setCell("ytva-third-label", w[0].toUpperCase() + w.slice(1) + "s");
+    setCell("ytva-permonth", String(r.counted));
+    setCell("ytva-permonth-sub", r.from ? `published ${fmtMonth(r.from)} – ${fmtMonth(r.to)}` : "");
+  } else {
+    setCell("ytva-third-label", "Per month");
+    setCell("ytva-permonth", r.perMonth == null ? "—" : abIntl2(Math.round(r.perMonth)));
+    setCell("ytva-permonth-sub", r.from ? `across ${fmtMonth(r.from)} – ${fmtMonth(r.to)}` : "");
+  }
+  // One bar is not a shape — drop the column rather than show a lone rectangle.
+  const sparkCol = document.getElementById("ytva-sparkcol");
+  if (sparkCol) sparkCol.hidden = buckets < 2;
+  const cols = document.querySelector(".ytva-cols");
+  if (cols) cols.classList.toggle("ytva-cols-3", buckets < 2);
   renderSpark(r.buckets);
   setCell("ytva-spark-from", r.from ? fmtMonth(r.from) : "");
   setCell("ytva-spark-to", r.to ? fmtMonth(r.to) : "");
@@ -1100,7 +1113,11 @@ async function runDataset(opts) {
     const stats = await datasetFor({ kind, months, n: n, sort },
       (got) => { say(`Read ${got}…`); tick(Math.min(92, (ticks += 4))); });
     if (gen !== runGen || chan !== getChannelId()) return;   // superseded, or we moved channel
-    if (!stats.length) { say("Couldn't list this channel's videos."); return; }
+    if (!stats.length) {
+      renderResults(null);          // never leave stale figures under a failure message
+      say("Couldn't list this channel's videos.");
+      return;
+    }
     // Only a run that walked the tabs end to end can speak for the oldest upload.
     if (!months && (!n || sort !== "Latest")) noteFullScan(chan, stats);
 

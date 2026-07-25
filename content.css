@@ -210,6 +210,8 @@
   display: grid; gap: 1px; background: var(--ytva-hair);
 }
 #ytva-panel .ytva-cols { grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 1.4fr); }
+#ytva-panel .ytva-cols.ytva-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+#ytva-panel .ytva-col[hidden] { display: none; }
 #ytva-panel .ytva-pair { grid-template-columns: 1fr 1fr; border-top: 1px solid var(--ytva-hair); }
 #ytva-panel .ytva-col {
   background: var(--ytva-bg); padding: 16px 20px; min-width: 0;

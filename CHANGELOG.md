@@ -2,6 +2,18 @@
 
 Versions live in `manifest.json`. Bump it in the same commit as the change.
 
+## 3.1.1
+
+### Changed
+- In a month window, "Per month" only restated the total, so that column now shows the
+  **number of videos** published in the window instead — the thing that was actually missing.
+- The monthly sparkline is dropped when the range covers a single month; one bar is not a
+  shape. The metric row falls back to three columns.
+
+### Fixed
+- A failed listing no longer leaves the previous run's figures sitting under a
+  "Couldn't list this channel's videos" message.
+
 ## 3.1.0
 
 ### Changed
