@@ -1,157 +1,252 @@
+/* View Aggregator panel — "strip" layout.
+   Type scale is deliberately tiny: 5 sizes (11 / 13 / 15 / 20 / 30) and 3 weights
+   (400 / 500 / 600). Every padding, gap and margin is a multiple of 4. Control chrome
+   uses explicit heights so switching the range can never resize the bar. */
+
 #ytva-panel, #ytva-panel * { box-sizing: border-box; }
+
+#ytva-panel.ytva-dark {
+  --ytva-bg: #1a1a1a;
+  --ytva-hair: rgba(255,255,255,0.09);
+  --ytva-ink: #f1f1f1;
+  --ytva-ink2: #c9c9c9;
+  --ytva-ink3: #9a9a9a;          /* AA on #1a1a1a — the old #7d7d7d did not pass */
+  --ytva-ctl: #242424;
+  --ytva-ctl-on: #3a3a3a;
+  --ytva-ctl-on-ink: #ffffff;
+  --ytva-input: #0f0f0f;
+  --ytva-edge: #333333;
+  --ytva-hover: #242424;
+  --ytva-track: rgba(255,255,255,0.08);
+}
+#ytva-panel.ytva-light {
+  --ytva-bg: #ffffff;
+  --ytva-hair: rgba(0,0,0,0.11);
+  --ytva-ink: #0f0f0f;
+  --ytva-ink2: #3f3f3f;
+  --ytva-ink3: #5e5e5e;
+  --ytva-ctl: #f2f2f2;
+  --ytva-ctl-on: #0f0f0f;
+  --ytva-ctl-on-ink: #ffffff;
+  --ytva-input: #ffffff;
+  --ytva-edge: #d4d4d4;
+  --ytva-hover: #f2f2f2;
+  --ytva-track: rgba(0,0,0,0.07);
+}
+
 #ytva-panel {
   margin: 8px 0 16px;
-  border-radius: 16px;
+  border-radius: 12px;
   overflow: hidden;
+  background: var(--ytva-bg);
+  border: 1px solid var(--ytva-hair);
+  color: var(--ytva-ink);
   font-family: "Roboto", system-ui, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
+/* Hidden until the stored collapse state has been read, so a collapsed panel never
+   flashes open first (and the header never measures a height we are about to drop). */
+#ytva-panel.ytva-preinit { display: none; }
 
-/* loading */
-#ytva-panel .ytva-progress { height: 2px; opacity: 0; transition: opacity 0.2s; }
-#ytva-panel.ytva-busy .ytva-progress { opacity: 1; }
-#ytva-panel .ytva-progress-fill { height: 100%; width: 0; transition: width 0.35s ease; }
-#ytva-panel .ytva-go:disabled { opacity: 0.75; cursor: default; }
-#ytva-panel .ytva-spinner {
-  display: none; width: 13px; height: 13px; border-radius: 50%;
-  border: 2px solid; border-color: currentColor currentColor currentColor transparent;
-  animation: ytva-spin 0.7s linear infinite;
-}
-#ytva-panel.ytva-busy .ytva-spinner { display: inline-block; }
-@keyframes ytva-spin { to { transform: rotate(360deg); } }
-#ytva-panel.ytva-dark .ytva-progress { background: rgba(255,255,255,0.08); }
-#ytva-panel.ytva-dark .ytva-progress-fill { background: #f1f1f1; }
-#ytva-panel.ytva-light .ytva-progress { background: rgba(0,0,0,0.07); }
-#ytva-panel.ytva-light .ytva-progress-fill { background: #0f0f0f; }
+/* ---------- type scale ---------- */
+#ytva-panel .ytva-lbl   { display: block; font-size: 11px; font-weight: 500; letter-spacing: 0.02em; line-height: 16px; color: var(--ytva-ink3); }
+#ytva-panel .ytva-sub   { font-size: 13px; font-weight: 400; line-height: 18px; color: var(--ytva-ink3); }
+#ytva-panel .ytva-ent   { font-size: 15px; font-weight: 500; line-height: 20px; color: var(--ytva-ink); }
+#ytva-panel .ytva-scope { font-size: 20px; font-weight: 600; line-height: 24px; color: var(--ytva-ink); }
+#ytva-panel .ytva-hero  { font-size: 30px; font-weight: 600; line-height: 32px; color: var(--ytva-ink); }
+/* Tabular figures on values only — never on labels or prose. */
 #ytva-panel .num {
   font-family: ui-monospace, "Roboto Mono", "SFMono-Regular", Menlo, monospace;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
 }
-
-/* header */
-#ytva-panel .ytva-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  padding: 18px 22px;
-  flex-wrap: wrap;
+#ytva-panel .ytva-vh {
+  position: absolute; width: 1px; height: 1px;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap;
 }
-#ytva-panel .ytva-brand { display: flex; align-items: center; gap: 11px; }
-#ytva-panel .ytva-logo {
-  width: 30px; height: 30px; border-radius: 9px;
-  display: flex; align-items: center; justify-content: center; flex: 0 0 auto;
-}
-#ytva-panel .ytva-name { font-size: 14px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.2; }
-#ytva-panel .ytva-name span { display: block; font-size: 11px; font-weight: 400; margin-top: 1px; }
 
-#ytva-panel .ytva-ctrl { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-#ytva-panel .ytva-seg { display: flex; border-radius: 10px; padding: 3px; }
+/* ---------- header bar ---------- */
+#ytva-panel .ytva-bar {
+  display: flex; align-items: center; flex-wrap: wrap;
+  gap: 8px 12px; padding: 12px 20px;
+  border-bottom: 1px solid var(--ytva-hair);
+}
+#ytva-panel .ytva-mark { display: flex; flex: 0 0 auto; color: var(--ytva-ink3); }
+/* Zero flex basis, not `auto`: flex line-breaking measures an item by its max-content
+   hypothetical size, so an `auto` basis would let a longer scope string ("Last 1 month · …")
+   or a status update push the whole control cluster onto a second row — a 40px jump in a
+   fixed header. At basis 0 the wrap never depends on this text; it ellipsises instead. */
+#ytva-panel .ytva-scopewrap {
+  display: flex; align-items: baseline; gap: 8px;
+  flex: 1 1 0; min-width: 0;
+}
+#ytva-panel .ytva-scope, #ytva-panel #ytva-status {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+#ytva-panel #ytva-status { flex: 0 1 auto; }
+
+#ytva-panel .ytva-seg {
+  display: flex; flex: 0 0 auto; gap: 4px;
+  height: 32px; padding: 4px; border-radius: 8px;
+  background: var(--ytva-ctl);
+}
 #ytva-panel .ytva-seg button {
-  border: 0; background: transparent; font-family: inherit;
-  font-weight: 600; font-size: 12.5px; padding: 6px 13px; border-radius: 8px;
-  cursor: pointer; transition: 0.12s;
+  border: 0; background: transparent; color: var(--ytva-ink3);
+  font-family: inherit; font-size: 13px; font-weight: 500; line-height: 24px;
+  height: 24px; padding: 0 12px; border-radius: 6px; cursor: pointer;
+  transition: background 0.12s, color 0.12s;
 }
-#ytva-panel .ytva-nw { display: flex; align-items: center; gap: 7px; font-size: 12.5px; }
-#ytva-panel .ytva-nw input {
-  width: 44px; padding: 7px; border-radius: 9px; font-size: 13px; font-weight: 600;
-  text-align: center; outline: none; font-family: inherit;
+#ytva-panel .ytva-seg button[aria-pressed="true"] {
+  background: var(--ytva-ctl-on); color: var(--ytva-ctl-on-ink);
 }
-#ytva-panel .ytva-go {
-  border: 0; border-radius: 10px; padding: 9px 18px; font-size: 13px; font-weight: 700; cursor: pointer;
-  display: inline-flex; align-items: center; gap: 8px;
+/* Inapplicable controls stay in place and keep their size — they are only disabled. */
+#ytva-panel .ytva-seg button:disabled { cursor: default; opacity: 0.4; }
+
+#ytva-panel .ytva-field {
+  display: inline-flex; align-items: center; flex: 0 0 auto; gap: 8px;
+  height: 32px; padding: 0 8px; border-radius: 8px; background: var(--ytva-ctl);
 }
-#ytva-panel .ytva-toggle {
-  border: 0; background: transparent; cursor: pointer; font-size: 14px;
-  width: 26px; height: 26px; border-radius: 7px; line-height: 1;
+#ytva-panel .ytva-field label { font-size: 11px; font-weight: 500; color: var(--ytva-ink3); }
+#ytva-panel .ytva-field select, #ytva-panel .ytva-field input {
+  height: 24px; padding: 0 4px; border: 1px solid var(--ytva-edge); border-radius: 6px;
+  background: var(--ytva-input); color: var(--ytva-ink);
+  font-family: inherit; font-size: 13px; font-weight: 500; outline: none;
+}
+/* Fixed width: a native select sizes to its selected option, so "Top N" → "Last N months"
+   would widen the field and shift every control to its right. */
+#ytva-panel .ytva-field select { cursor: pointer; width: 120px; }
+#ytva-panel .ytva-field input { width: 48px; text-align: center; }
+#ytva-panel .ytva-field select:disabled, #ytva-panel .ytva-field input:disabled {
+  cursor: default; opacity: 0.4;
 }
 
-/* grid */
-#ytva-panel .ytva-grid {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; padding: 4px 22px 22px;
+#ytva-panel .ytva-go {
+  flex: 0 0 auto; height: 32px; padding: 0 12px; border-radius: 8px;
+  display: inline-flex; align-items: center; gap: 8px;
+  border: 1px solid var(--ytva-edge); background: transparent; color: var(--ytva-ink2);
+  font-family: inherit; font-size: 13px; font-weight: 500; cursor: pointer;
 }
-@media (max-width: 1100px) { #ytva-panel .ytva-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 640px)  { #ytva-panel .ytva-grid { grid-template-columns: 1fr; } }
-#ytva-panel .ytva-cell {
-  position: relative;
-  min-width: 0;              /* let 1fr columns stay equal; long titles truncate instead of stretching */
-  border-radius: 13px; padding: 20px 22px; min-height: 104px;
-  display: flex; flex-direction: column; justify-content: center; gap: 7px;
+#ytva-panel .ytva-go:hover:not(:disabled) { background: var(--ytva-hover); color: var(--ytva-ink); }
+#ytva-panel .ytva-go:disabled { cursor: default; opacity: 0.4; }
+
+#ytva-panel .ytva-acc {
+  flex: 0 0 auto; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 8px;
+  background: transparent; color: var(--ytva-ink3); cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
 }
-/* per-card circular loader while fetching */
-#ytva-panel .ytva-cload {
-  display: none; position: absolute; top: calc(50% - 11px); left: calc(50% - 11px);
-  width: 22px; height: 22px; border-radius: 50%; border: 2.5px solid;
-  border-color: currentColor currentColor currentColor transparent;
-  animation: ytva-spin 0.7s linear infinite; opacity: 0.55;
+#ytva-panel .ytva-acc:hover { background: var(--ytva-hover); color: var(--ytva-ink); }
+#ytva-panel .ytva-acc svg { transition: transform 0.18s ease; }
+#ytva-panel .ytva-acc[aria-expanded="false"] svg { transform: rotate(-90deg); }
+
+#ytva-panel button:focus-visible,
+#ytva-panel select:focus-visible,
+#ytva-panel input:focus-visible,
+#ytva-panel a:focus-visible { outline: 2px solid #5a90d8; outline-offset: 1px; }
+
+/* ---------- accordion ---------- */
+#ytva-panel .ytva-accbody {
+  display: grid; grid-template-rows: 1fr;
+  transition: grid-template-rows 0.2s ease, opacity 0.12s ease;
 }
-#ytva-panel.ytva-busy .ytva-cload { display: block; }
-#ytva-panel.ytva-busy .ytva-cell > :not(.ytva-cload) { visibility: hidden; }
-#ytva-panel .ytva-clabel { font-size: 12.5px; font-weight: 500; display: flex; align-items: center; gap: 7px; }
-#ytva-panel .ytva-ar { flex: 0 0 auto; }
-#ytva-panel .ytva-cval { font-size: 26px; font-weight: 800; line-height: 1; }
-#ytva-panel .ytva-cval.sm { font-size: 22px; }
-#ytva-panel .ytva-cind { font-size: 15px; font-weight: 700; line-height: 1.1; }
-#ytva-panel .ytva-cvr { font-size: 14px; font-weight: 700; line-height: 1.1; }
-#ytva-panel .ytva-cexact { font-size: 12px; font-weight: 400; }
-#ytva-panel .ytva-csub { font-size: 12px; }
-#ytva-panel .ytva-ctitle {
-  display: block;
-  font-size: 14px; font-weight: 600; line-height: 1.3;
+#ytva-panel .ytva-accbody[data-collapsed="true"] { grid-template-rows: 0fr; }
+#ytva-panel .ytva-accinner { overflow: hidden; min-height: 0; }
+/* Results from the previous run stay readable while the next one fetches — the 2px progress
+   line carries the "busy" signal, so this only needs to recede, not to grey out. */
+#ytva-panel.ytva-busy .ytva-accbody { opacity: 0.72; }
+@media (prefers-reduced-motion: reduce) {
+  #ytva-panel .ytva-accbody, #ytva-panel .ytva-acc svg { transition: none; }
+}
+
+/* ---------- mode tabs ----------
+   Each mode is a different question, so each gets its own row of controls. Nothing that
+   does not apply is left on screen — which is what the old disabled-in-place controls were
+   working around. The row keeps a fixed height so switching modes cannot resize the panel. */
+#ytva-panel .ytva-tabs {
+  display: flex; gap: 4px; padding: 0 16px; border-bottom: 1px solid var(--ytva-hair);
+}
+#ytva-panel .ytva-tabs [role="tab"] {
+  border: 0; background: transparent; font-family: inherit; font-size: 13px; font-weight: 500;
+  color: var(--ytva-ink3); padding: 0 12px; height: 36px; cursor: pointer;
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+}
+#ytva-panel .ytva-tabs [role="tab"]:hover { color: var(--ytva-ink2); }
+#ytva-panel .ytva-tabs [role="tab"][aria-selected="true"] {
+  color: var(--ytva-ink); font-weight: 600; border-bottom-color: var(--ytva-ink);
+}
+#ytva-panel .ytva-tabs [role="tab"]:focus-visible { outline: 2px solid var(--ytva-accent); outline-offset: -2px; }
+
+#ytva-panel .ytva-tabrow {
+  display: flex; align-items: center; gap: 12px; padding: 0 16px;
+  height: 56px; border-bottom: 1px solid var(--ytva-hair);
+}
+#ytva-panel .ytva-modectl { display: flex; align-items: center; gap: 12px; min-width: 0; }
+#ytva-panel .ytva-modectl[hidden] { display: none; }
+#ytva-panel .ytva-lead { font-size: 13px; font-weight: 400; color: var(--ytva-ink3); }
+#ytva-panel .ytva-monthsbox { display: inline-flex; align-items: center; }
+#ytva-panel .ytva-tabrow .ytva-go { margin-left: auto; }
+
+/* ---------- busy signal ----------
+   The user wants to keep reading the previous run's figures while the next one loads, so
+   nothing is hidden: a spinner in the button plus the progress line carry the state. The
+   button reserves the spinner's width at all times so starting a run cannot resize the bar. */
+#ytva-panel .ytva-spinner {
+  width: 12px; height: 12px; border-radius: 50%; flex: 0 0 auto; visibility: hidden;
+  border: 2px solid; border-color: currentColor currentColor currentColor transparent;
+  animation: ytva-spin 0.7s linear infinite;
+}
+#ytva-panel.ytva-busy .ytva-spinner { visibility: visible; }
+@keyframes ytva-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { #ytva-panel .ytva-spinner { animation-duration: 2.4s; } }
+
+/* ---------- progress ---------- */
+#ytva-panel .ytva-progress { height: 2px; background: var(--ytva-track); opacity: 0; transition: opacity 0.2s; }
+#ytva-panel.ytva-busy .ytva-progress { opacity: 1; }
+#ytva-panel .ytva-progress-fill { height: 100%; width: 0; background: var(--ytva-ink); transition: width 0.35s ease; }
+
+/* ---------- metric columns ----------
+   The 1px grid gaps ARE the hairlines: cells paint the panel background over a hairline
+   container, so the rules survive any column count without per-cell border juggling. */
+#ytva-panel .ytva-cols, #ytva-panel .ytva-pair {
+  display: grid; gap: 1px; background: var(--ytva-hair);
+}
+#ytva-panel .ytva-cols { grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 1.4fr); }
+#ytva-panel .ytva-pair { grid-template-columns: 1fr 1fr; border-top: 1px solid var(--ytva-hair); }
+#ytva-panel .ytva-col {
+  background: var(--ytva-bg); padding: 16px 20px; min-width: 0;
+}
+#ytva-panel .ytva-col .ytva-lbl { margin-bottom: 8px; }
+/* Direct children only — the sparkline's axis captions carry their own row margin and would
+   otherwise sit 8px low, breaking the shared baseline across the columns. */
+#ytva-panel .ytva-col > .ytva-sub { display: block; margin-top: 4px; }
+#ytva-panel a.ytva-ent {
+  display: block; text-decoration: none;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-#ytva-panel a.ytva-link { color: inherit; text-decoration: none; cursor: pointer; }
-#ytva-panel a.ytva-link:hover { text-decoration: underline; }
+#ytva-panel a.ytva-ent:hover { text-decoration: underline; }
+@media (max-width: 1100px) { #ytva-panel .ytva-cols { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 760px)  {
+  #ytva-panel .ytva-cols { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #ytva-panel .ytva-hero { font-size: 20px; line-height: 24px; }
+}
 
-/* ---- dark theme ---- */
-#ytva-panel.ytva-dark { background: #1a1a1a; border: 1px solid rgba(255,255,255,0.09); box-shadow: 0 2px 10px rgba(0,0,0,0.35); }
-#ytva-panel.ytva-dark .ytva-head { border-bottom: 1px solid rgba(255,255,255,0.06); }
-#ytva-panel.ytva-dark .ytva-logo { background: #272727; color: #f1f1f1; }
-#ytva-panel.ytva-dark .ytva-name { color: #f1f1f1; }
-#ytva-panel.ytva-dark .ytva-name span { color: #8f8f8f; }
-#ytva-panel.ytva-dark .ytva-seg { background: #272727; }
-#ytva-panel.ytva-dark .ytva-seg button { color: #a0a0a0; }
-#ytva-panel.ytva-dark .ytva-seg button.on { background: #3d3d3d; color: #fff; }
-#ytva-panel.ytva-dark .ytva-nw { color: #a0a0a0; }
-#ytva-panel.ytva-dark .ytva-nw input { border: 1px solid #383838; background: #0f0f0f; color: #fff; }
-#ytva-panel.ytva-dark .ytva-go { background: #f1f1f1; color: #0f0f0f; }
-#ytva-panel.ytva-dark .ytva-toggle { color: #909090; }
-#ytva-panel.ytva-dark .ytva-cell { background: #242424; }
-#ytva-panel.ytva-dark .ytva-clabel { color: #909090; }
-#ytva-panel.ytva-dark .ytva-cval { color: #f5f5f5; }
-#ytva-panel.ytva-dark .ytva-csub { color: #7d7d7d; }
-#ytva-panel.ytva-dark .ytva-cind { color: #cfcfcf; }
-#ytva-panel.ytva-dark .ytva-cexact { color: #7d7d7d; }
-#ytva-panel.ytva-dark .ytva-ctitle { color: #e9e9e9; }
-#ytva-panel.ytva-dark .ytva-up { color: #5fd08a; }
-#ytva-panel.ytva-dark .ytva-dn { color: #f0876a; }
-#ytva-panel.ytva-dark .ytva-cload { color: #b0b0b0; }
+/* ---------- sparkline (single hue — bar height is the only variable) ---------- */
+/* 32px is the hero's line-height, so the axis captions land on the same row as the other
+   columns' sub-lines. */
+#ytva-panel .ytva-spark { display: flex; align-items: flex-end; gap: 4px; height: 32px; margin-top: 8px; }
+#ytva-panel .ytva-spark i {
+  display: block; flex: 1; min-width: 0; max-width: 24px;
+  background: #5a90d8; border-radius: 2px 2px 0 0; opacity: 0.85;
+}
+#ytva-panel .ytva-sparkaxis { display: flex; justify-content: space-between; gap: 8px; margin-top: 4px; }
 
-/* ---- light theme ---- */
-#ytva-panel.ytva-light { background: #ffffff; border: 1px solid #dcdcdc; box-shadow: 0 1px 5px rgba(0,0,0,0.08); }
-#ytva-panel.ytva-light .ytva-head { border-bottom: 1px solid #efefef; }
-#ytva-panel.ytva-light .ytva-logo { background: #0f0f0f; color: #fff; }
-#ytva-panel.ytva-light .ytva-name { color: #0f0f0f; }
-#ytva-panel.ytva-light .ytva-name span { color: #909090; }
-#ytva-panel.ytva-light .ytva-seg { background: #f2f2f2; }
-#ytva-panel.ytva-light .ytva-seg button { color: #606060; }
-#ytva-panel.ytva-light .ytva-seg button.on { background: #0f0f0f; color: #fff; }
-#ytva-panel.ytva-light .ytva-nw { color: #606060; }
-#ytva-panel.ytva-light .ytva-nw input { border: 1px solid #dcdcdc; background: #fafafa; color: #0f0f0f; }
-#ytva-panel.ytva-light .ytva-go { background: #0f0f0f; color: #fff; }
-#ytva-panel.ytva-light .ytva-toggle { color: #909090; }
-#ytva-panel.ytva-light .ytva-cell { background: #f2f2f2; }
-#ytva-panel.ytva-light .ytva-clabel { color: #8a8a8a; }
-#ytva-panel.ytva-light .ytva-cval { color: #0f0f0f; }
-#ytva-panel.ytva-light .ytva-csub { color: #9a9a9a; }
-#ytva-panel.ytva-light .ytva-cind { color: #3a3a3a; }
-#ytva-panel.ytva-light .ytva-cexact { color: #9a9a9a; }
-#ytva-panel.ytva-light .ytva-ctitle { color: #272727; }
-#ytva-panel.ytva-light .ytva-up { color: #1a9d5c; }
-#ytva-panel.ytva-light .ytva-dn { color: #d9663a; }
-#ytva-panel.ytva-light .ytva-cload { color: #808080; }
+/* ---------- footer ---------- */
+#ytva-panel .ytva-foot {
+  display: flex; flex-wrap: wrap; gap: 4px 24px;
+  padding: 12px 20px; border-top: 1px solid var(--ytva-hair);
+  font-size: 13px; font-weight: 400; color: var(--ytva-ink3);
+}
+#ytva-panel .ytva-foot b { font-weight: 600; color: var(--ytva-ink2); }
 
-/* date under each card */
+/* ---------- date under each video card ---------- */
 .ytva-date { font-size: 12px; font-weight: 600; color: #3ea6ff; margin-top: 2px; }
 .ytva-date-missing { color: #888; }
